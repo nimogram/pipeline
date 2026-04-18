@@ -97,8 +97,32 @@
         };
 
         const App = () => {
-          const [deals, setDeals] = useState([]);
-          const [quotas, setQuotas] = useState({ ALL: 800, Q1: 200, Q2: 200, Q3: 200, Q4: 200 });
+          // 指定されたデータを初期値として反映
+          const [deals, setDeals] = useState([
+            { "client": "TRH GL 神戸", "amount": 40000000, "status": "WON", "month": "12月", "id": "1772500808369" },
+            { "client": "TRH GL 印西", "amount": 60000000, "status": "WON", "month": "1月", "id": "1772500823192" },
+            { "client": "HKDしんきん情報", "amount": 30000000, "status": "WON", "month": "2月", "id": "1772500957209" },
+            { "client": "HBA 社内", "amount": 18000000, "status": "WON", "month": "2月", "id": "1772501915671" },
+            { "client": "SPR NEWS-NET SVT+", "amount": 35000000, "status": "COMMIT", "month": "3月", "id": "1772499909607" },
+            { "client": "HBA DC", "amount": 70000000, "status": "COMMIT WITH RISK", "month": "3月", "id": "1772499944457" },
+            { "client": "SPR 防災", "amount": 20000000, "status": "COMMIT WITH RISK", "month": "4月", "id": "1772500902043" },
+            { "client": "DK VEEAM", "amount": 30000000, "status": "COMMIT WITH RISK", "month": "7月", "id": "1772502586693" },
+            { "client": "酪農学園　KGS", "amount": 10000000, "status": "COMMIT WITH RISK", "month": "3月", "id": "1772502692597" },
+            { "client": "DK ほくとネット本番", "amount": 100000000, "status": "COMMIT WITH RISK", "month": "7月", "id": "1772502446678" },
+            { "client": "IWZ VDI", "amount": 30000000, "status": "STRONG UPSIDE", "month": "4月", "id": "1772500995264" },
+            { "client": "SPR BPR NTNX", "amount": 60000000, "status": "STRONG UPSIDE", "month": "4月", "id": "1772501883219" },
+            { "client": "JSD G会社", "amount": 50000000, "status": "STRONG UPSIDE", "month": "4月", "id": "1772502230810" },
+            { "client": "SEC　NTNX", "amount": 130000000, "status": "STRONG UPSIDE", "month": "5月", "id": "1772502294711" },
+            { "client": "NOSAI", "amount": 40000000, "status": "STRONG UPSIDE", "month": "4月", "id": "1772502352133" },
+            { "client": "HARP STEP1", "amount": 10000000, "status": "STRONG UPSIDE", "month": "4月", "id": "1772502382207" },
+            { "client": "SMART道庁", "amount": 200000000, "status": "STRONG UPSIDE", "month": "6月", "id": "1772502531162" },
+            { "client": "CTS PCBE", "amount": 20000000, "status": "STRONG UPSIDE", "month": "7月", "id": "1772502803827" },
+            { "client": "SPR 水道", "amount": 50000000, "status": "STRONG UPSIDE", "month": "6月", "id": "1772502838461" },
+            { "client": "名寄市立大学　FBJ", "amount": 50000000, "status": "PIPELINE", "month": "3月", "id": "1772500745545" },
+            { "client": "SGU PCBE", "amount": 10000000, "status": "PIPELINE", "month": "5月", "id": "1772502649416" },
+            { "client": "北大病院", "amount": 50000000, "status": "PIPELINE", "month": "6月", "id": "1772502903577" }
+          ]);
+          const [quotas, setQuotas] = useState({ "ALL": 600, "Q1": 200, "Q2": 200, "Q3": 200, "Q4": 200 });
           const [quarter, setQuarter] = useState("ALL");
           const [activeTab, setActiveTab] = useState("matrix");
           const [hoverId, setHoverId] = useState(null);
@@ -106,12 +130,11 @@
           const [showQuotaForm, setShowQuotaForm] = useState(false);
           const [editId, setEditId] = useState(null);
           const [form, setForm] = useState({ client: "", amount: "", status: "PIPELINE", month: "3月" });
-          // URLを最新の指示に合わせて更新しました
           const [gasUrl, setGasUrl] = useState("https://script.google.com/macros/s/AKfycbyiCV4WaqccGv7geNZ7qWpj9Bx3Mhli0nsONVRL2yGjIroR3GfFDHiXZRbNBP5pT_MqqA/exec");
           const [syncStatus, setSyncStatus] = useState({ loading: false, msg: "" });
           const fileRef = useRef(null);
 
-          // Persistence
+          // Persistence: 初回読み込み時にStorageが空なら初期値を使う
           useEffect(() => {
             try {
               const raw = localStorage.getItem(STORAGE_KEY);
@@ -206,22 +229,9 @@
           const syncToCloud = async () => {
             if (!gasUrl) return setSyncStatus({ loading: false, msg: "URL REQUIRED" });
             setSyncStatus({ loading: true, msg: "REQUESTING..." });
-            
             try {
-              const payload = JSON.stringify({ 
-                deals, 
-                quotas, 
-                timestamp: new Date().toISOString(),
-                clientSource: "MobileSquare-v11.14"
-              });
-
-              await fetch(gasUrl, {
-                method: 'POST',
-                mode: 'no-cors', 
-                headers: { 'Content-Type': 'text/plain' }, 
-                body: payload
-              });
-              
+              const payload = JSON.stringify({ deals, quotas, timestamp: new Date().toISOString(), clientSource: "MobileSquare-v11.14" });
+              await fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: payload });
               setSyncStatus({ loading: false, msg: "SENT (CHECK SHEET)" });
             } catch (err) {
               setSyncStatus({ loading: false, msg: "SEND FAILED: " + err.message.substring(0,20) });
@@ -232,12 +242,9 @@
           const loadFromCloud = async () => {
             if (!gasUrl) return setSyncStatus({ loading: false, msg: "URL REQUIRED" });
             setSyncStatus({ loading: true, msg: "FETCHING..." });
-            
             try {
               const response = await fetch(gasUrl, { method: 'GET', cache: 'no-store' });
-              
               if (!response.ok) throw new Error("HTTP " + response.status);
-              
               const data = await response.json();
               if (data && data.deals) {
                 setDeals(data.deals);
@@ -262,8 +269,6 @@
 
           return (
             <div className="flex flex-col h-full overflow-hidden bg-black">
-              
-              {/* Header */}
               <header className="bg-black border-b border-[#01A98240] pt-4 pb-2 px-4 flex-shrink-0 z-50 no-print">
                 <div className="flex justify-between items-center mb-3">
                   <div className="flex items-center gap-2">
@@ -276,72 +281,46 @@
                     <button onClick={() => window.print()} className="px-3 py-1 bg-white/5 text-white text-[10px] font-bold border border-white/20 rounded-sm uppercase tracking-tighter active:bg-white/10">PDF</button>
                   </div>
                 </div>
-
                 <div className="flex bg-[#0d1117] p-1 border border-white/10 rounded-sm mb-3 overflow-x-auto scrollbar-hide">
                   {["ALL", "Q1", "Q2", "Q3", "Q4"].map(q => (
-                    <button key={q} onClick={() => setQuarter(q)} 
-                      className={`flex-1 min-w-[60px] py-1.5 text-[11px] font-black transition-all rounded-sm ${quarter === q ? 'bg-[#01A982] text-white' : 'text-gray-500'}`}>
-                      {q}
-                    </button>
+                    <button key={q} onClick={() => setQuarter(q)} className={`flex-1 min-w-[60px] py-1.5 text-[11px] font-black transition-all rounded-sm ${quarter === q ? 'bg-[#01A982] text-white' : 'text-gray-500'}`}>{q}</button>
                   ))}
                 </div>
-
                 <div className="flex justify-between items-center px-1 mb-3">
                   <div className="flex flex-col">
                     <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Pipeline</span>
                     <span className="text-lg font-black text-[#01A982]">{fmt(stats.total)}</span>
                   </div>
-                  
                   <button onClick={() => setShowQuotaForm(true)} className="flex flex-col items-center group active:scale-95 transition-transform">
                     <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest flex items-center gap-1">Quota <Ico.Target /></span>
                     <span className="text-lg font-black text-white group-hover:text-[#01A982] border-b border-transparent group-hover:border-[#01A982]">{fmt(currentQuotaValue*UNIT_VALUE)}</span>
                   </button>
-
                   <div className="flex flex-col items-end">
                     <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Achieved</span>
                     <span className="text-lg font-black text-white">{stats.achievement}%</span>
                   </div>
                 </div>
-
                 <div className="h-6 bg-black border border-white/5 flex overflow-hidden rounded-sm relative shadow-inner mb-1">
                   {stats.byStatus.map(s => s.val > 0 && (
-                    <div key={s.status} 
-                      style={{ width: `${(s.val / UNIT_VALUE / stats.qUnits) * 100}%`, background: STATUS_META[s.status].bg }} 
-                      className="h-full border-r border-white/10 flex items-center justify-end px-2 group overflow-hidden"
-                    >
-                      <span className="text-[8px] font-black text-white whitespace-nowrap opacity-90 drop-shadow-md">
-                        {s.cumPct}%
-                      </span>
+                    <div key={s.status} style={{ width: `${(s.val / UNIT_VALUE / stats.qUnits) * 100}%`, background: STATUS_META[s.status].bg }} className="h-full border-r border-white/10 flex items-center justify-end px-2 group overflow-hidden">
+                      <span className="text-[8px] font-black text-white whitespace-nowrap opacity-90 drop-shadow-md">{s.cumPct}%</span>
                     </div>
                   ))}
                   <div className="absolute top-0 right-0 h-full w-[2px] bg-white shadow-[0_0_10px_white] z-10"></div>
                 </div>
               </header>
-
-              {/* Dynamic Content */}
               <main className="flex-1 min-h-0 relative flex flex-col no-print">
                 {activeTab === 'matrix' ? (
                   <div className="flex-1 flex flex-col items-center justify-start overflow-hidden pt-4">
-                    <div className="matrix-square-container bg-[#0d1117] border-y border-white/10 p-[1px] gap-[1px] grid shadow-2xl"
-                      style={{ 
-                        gridTemplateColumns: `repeat(${gridCfg.cols}, 1fr)`, 
-                        gridTemplateRows: `repeat(${gridCfg.rows}, 1fr)` 
-                      }}>
+                    <div className="matrix-square-container bg-[#0d1117] border-y border-white/10 p-[1px] gap-[1px] grid shadow-2xl" style={{ gridTemplateColumns: `repeat(${gridCfg.cols}, 1fr)`, gridTemplateRows: `repeat(${gridCfg.rows}, 1fr)` }}>
                       {gridData.map((cell, i) => {
                         const isSelected = cell && hoverId === cell.id;
                         const isQuota = i < stats.qUnits;
                         return (
-                          <div key={i} onClick={() => cell && setHoverId(hoverId === cell.id ? null : cell.id)}
-                            className={`relative transition-all ${cell ? 'cursor-pointer' : 'tile-empty'} ${isSelected ? 'balloon-active' : ''}`}
-                            style={{ 
-                              backgroundColor: cell ? (isSelected ? "#FDE047" : STATUS_META[cell.status].bg) : (isQuota ? "#0f172a" : "#05070a"),
-                              border: cell ? `1px solid ${isSelected ? "#FDE047" : STATUS_META[cell.status].bg + '44'}` : '1px solid rgba(255,255,255,0.02)'
-                            }}>
-                          </div>
+                          <div key={i} onClick={() => cell && setHoverId(hoverId === cell.id ? null : cell.id)} className={`relative transition-all ${cell ? 'cursor-pointer' : 'tile-empty'} ${isSelected ? 'balloon-active' : ''}`} style={{ backgroundColor: cell ? (isSelected ? "#FDE047" : STATUS_META[cell.status].bg) : (isQuota ? "#0f172a" : "#05070a"), border: cell ? `1px solid ${isSelected ? "#FDE047" : STATUS_META[cell.status].bg + '44'}` : '1px solid rgba(255,255,255,0.02)' }}></div>
                         );
                       })}
                     </div>
-
                     {hoverId && (
                       <div className="absolute top-1/2 left-0 w-full p-6 -translate-y-1/2 pointer-events-none">
                         <div className="bg-black/95 backdrop-blur-xl border-2 border-[#FDE047] p-6 shadow-[0_0_50px_rgba(253,224,71,0.4)] rounded-sm text-center">
@@ -353,12 +332,9 @@
                                 <div className="text-[10px] font-black text-[#FDE047] uppercase tracking-[0.4em] mb-1">Target Lock</div>
                                 <div className="text-xl font-black text-white uppercase mb-2 truncate">{d.client}</div>
                                 <div className="text-3xl font-black text-[#FDE047] mb-1">{fmt(d.amount)}</div>
-                                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                                  {STATUS_META[d.status].label} · {d.month}
-                                </div>
+                                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{STATUS_META[d.status].label} · {d.month}</div>
                                 <div className="mt-4 pointer-events-auto">
-                                    <button onClick={() => { setForm({ client: d.client, amount: String(Number(d.amount||0)/UNIT_VALUE), status: d.status, month: d.month }); setEditId(d.id); setShowForm(true); }}
-                                      className="px-6 py-2 bg-white/10 text-white text-[10px] font-bold uppercase tracking-widest border border-white/20 rounded-full active:bg-white/20">Edit Details</button>
+                                    <button onClick={() => { setForm({ client: d.client, amount: String(Number(d.amount||0)/UNIT_VALUE), status: d.status, month: d.month }); setEditId(d.id); setShowForm(true); }} className="px-6 py-2 bg-white/10 text-white text-[10px] font-bold uppercase tracking-widest border border-white/20 rounded-full active:bg-white/20">Edit Details</button>
                                 </div>
                               </>
                             );
@@ -376,8 +352,7 @@
                         <div key={s} className="space-y-2">
                           <div className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] border-l-2 border-gray-800 pl-3">{STATUS_META[s].label}</div>
                           {grp.map(deal => (
-                            <div key={deal.id} onClick={() => { setForm({ client: deal.client, amount: String(Number(deal.amount || 0) / UNIT_VALUE), status: deal.status, month: deal.month }); setEditId(deal.id); setShowForm(true); }} 
-                              className="p-4 bg-white/[0.03] border border-white/5 flex items-center justify-between rounded-sm active:bg-white/10">
+                            <div key={deal.id} onClick={() => { setForm({ client: deal.client, amount: String(Number(deal.amount || 0) / UNIT_VALUE), status: deal.status, month: deal.month }); setEditId(deal.id); setShowForm(true); }} className="p-4 bg-white/[0.03] border border-white/5 flex items-center justify-between rounded-sm active:bg-white/10">
                               <div className="flex flex-col gap-1">
                                 <span className="text-[14px] font-black text-white uppercase truncate w-40 tracking-tighter">{deal.client}</span>
                                 <span className="text-[9px] text-gray-600 font-bold uppercase">{deal.month}</span>
@@ -391,177 +366,40 @@
                   </div>
                 )}
               </main>
-
-              {/* Bottom Navigation */}
               <nav className="no-print bg-black border-t border-white/10 flex items-center justify-around h-20 px-6 pb-2 z-50">
-                <button onClick={() => { setActiveTab('matrix'); setHoverId(null); }} className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'matrix' ? 'text-[#01A982] scale-110' : 'text-gray-600'}`}>
-                  <Ico.Grid />
-                  <span className="text-[9px] font-black uppercase tracking-widest">Matrix</span>
-                </button>
-
-                <button onClick={() => { setEditId(null); setForm({ client: "", amount: "", status: "PIPELINE", month: "3月" }); setShowForm(true); }}
-                  className="w-14 h-14 bg-[#01A982] text-white flex items-center justify-center rounded-full shadow-[0_0_30px_rgba(1,169,130,0.4)] active:scale-90 -translate-y-6 border-4 border-black">
-                  <Ico.Plus />
-                </button>
-
-                <button onClick={() => setActiveTab('list')} className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'list' ? 'text-[#01A982] scale-110' : 'text-gray-600'}`}>
-                  <Ico.List />
-                  <span className="text-[9px] font-black uppercase tracking-widest">List</span>
-                </button>
+                <button onClick={() => { setActiveTab('matrix'); setHoverId(null); }} className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'matrix' ? 'text-[#01A982] scale-110' : 'text-gray-600'}`}><Ico.Grid /><span className="text-[9px] font-black uppercase tracking-widest">Matrix</span></button>
+                <button onClick={() => { setEditId(null); setForm({ client: "", amount: "", status: "PIPELINE", month: "3月" }); setShowForm(true); }} className="w-14 h-14 bg-[#01A982] text-white flex items-center justify-center rounded-full shadow-[0_0_30px_rgba(1,169,130,0.4)] active:scale-90 -translate-y-6 border-4 border-black"><Ico.Plus /></button>
+                <button onClick={() => setActiveTab('list')} className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'list' ? 'text-[#01A982] scale-110' : 'text-gray-600'}`}><Ico.List /><span className="text-[9px] font-black uppercase tracking-widest">List</span></button>
               </nav>
-
-              {/* PDF Print Content */}
               <div className="print-only">
-                <div className="flex justify-between items-end border-b-2 border-black mb-4 pb-2">
-                  <h1 className="text-xl font-black uppercase tracking-[0.5em]">HPE Pipeline Inventory</h1>
-                  <span className="text-[10px] font-bold text-gray-500 uppercase">Scope: {quarter} · Generated: {new Date().toLocaleDateString()}</span>
-                </div>
-                <div className="flex gap-10">
-                   <div className="print-layout-grid flex-1">
-                      <div className="matrix-container-print" 
-                           style={{ 
-                             display: "grid", 
-                             gridTemplateColumns: `repeat(${gridCfg.cols}, 1fr)`, 
-                             gridTemplateRows: `repeat(${gridCfg.rows}, 1fr)`, 
-                             gap: "1px", 
-                             background: "white" 
-                           }}>
-                        {gridData.map((cell, i) => (
-                          <div key={i} style={{ 
-                            backgroundColor: cell ? STATUS_META[cell.status].bg : (i < stats.qUnits ? "#f3f4f6" : "white"), 
-                            border: "0.1px solid #eee",
-                            aspectRatio: "1/1"
-                          }}></div>
-                        ))}
-                      </div>
-                   </div>
-                   <div className="flex-1">
-                      <table className="w-full border-collapse print-table">
-                        <thead>
-                          <tr className="bg-gray-100"><th align="left">Stage</th><th align="left">Identity</th><th align="right">Amount</th><th align="center">QTA</th><th align="center">Month</th></tr>
-                        </thead>
-                        <tbody>
-                          {sortedDeals.map(d => (
-                            <tr key={d.id} className={d.status === 'WON' || d.status === 'COMMIT' ? "bg-highlight-green" : (d.status === 'STRONG UPSIDE' ? "bg-highlight-blue" : "")}>
-                              <td style={{ color: STATUS_META[d.status].bg, fontWeight: "bold" }}>{STATUS_META[d.status].label}</td>
-                              <td>{d.client}</td>
-                              <td align="right">{fmt(d.amount)}</td>
-                              <td align="center">{getQta(d.month)}</td>
-                              <td align="center">{d.month}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                   </div>
-                </div>
+                <div className="flex justify-between items-end border-b-2 border-black mb-4 pb-2"><h1 className="text-xl font-black uppercase tracking-[0.5em]">HPE Pipeline Inventory</h1><span className="text-[10px] font-bold text-gray-500 uppercase">Scope: {quarter} · Generated: {new Date().toLocaleDateString()}</span></div>
+                <div className="flex gap-10"><div className="print-layout-grid flex-1"><div className="matrix-container-print" style={{ display: "grid", gridTemplateColumns: `repeat(${gridCfg.cols}, 1fr)`, gridTemplateRows: `repeat(${gridCfg.rows}, 1fr)`, gap: "1px", background: "white" }}>{gridData.map((cell, i) => (<div key={i} style={{ backgroundColor: cell ? STATUS_META[cell.status].bg : (i < stats.qUnits ? "#f3f4f6" : "white"), border: "0.1px solid #eee", aspectRatio: "1/1" }}></div>))}</div></div><div className="flex-1"><table className="w-full border-collapse print-table"><thead><tr className="bg-gray-100"><th align="left">Stage</th><th align="left">Identity</th><th align="right">Amount</th><th align="center">QTA</th><th align="center">Month</th></tr></thead><tbody>{sortedDeals.map(d => (<tr key={d.id} className={d.status === 'WON' || d.status === 'COMMIT' ? "bg-highlight-green" : (d.status === 'STRONG UPSIDE' ? "bg-highlight-blue" : "")}><td style={{ color: STATUS_META[d.status].bg, fontWeight: "bold" }}>{STATUS_META[d.status].label}</td><td>{d.client}</td><td align="right">{fmt(d.amount)}</td><td align="center">{getQta(d.month)}</td><td align="center">{d.month}</td></tr>))}</tbody></table></div></div>
               </div>
-
-              {/* Modal: Settings & Quota Screen */}
               {showQuotaForm && (
                 <div className="fixed inset-0 bg-black z-[2000] flex flex-col no-print animate-in fade-in duration-200">
-                  <header className="px-6 py-6 border-b border-white/10 flex justify-between items-center">
-                    <span className="text-[10px] font-black tracking-[0.5em] text-[#01A982] uppercase flex items-center gap-2"><Ico.Target /> Settings & Quota</span>
-                    <button onClick={() => setShowQuotaForm(false)} className="text-gray-500 p-2 active:text-white"><Ico.X /></button>
-                  </header>
+                  <header className="px-6 py-6 border-b border-white/10 flex justify-between items-center"><span className="text-[10px] font-black tracking-[0.5em] text-[#01A982] uppercase flex items-center gap-2"><Ico.Target /> Settings & Quota</span><button onClick={() => setShowQuotaForm(false)} className="text-gray-500 p-2 active:text-white"><Ico.X /></button></header>
                   <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
-                    {/* Cloud Sync Section */}
                     <div className="bg-white/[0.03] border border-white/5 p-6 rounded-sm space-y-4">
                       <label className="text-[8px] font-black text-[#01A982] uppercase tracking-[0.2em] flex items-center gap-2"><Ico.Cloud /> Cloud Sync (GAS)</label>
-                      <input 
-                        type="text" 
-                        value={gasUrl} 
-                        onChange={e => setGasUrl(e.target.value)} 
-                        placeholder="https://script.google.com/macros/s/.../exec"
-                        className="w-full bg-black border border-white/10 p-4 text-[10px] font-mono text-white outline-none focus:border-[#01A982]" 
-                      />
-                      <div className="grid grid-cols-2 gap-4">
-                        <button 
-                          onClick={loadFromCloud} 
-                          disabled={syncStatus.loading}
-                          className="py-3 bg-white/5 text-white text-[10px] font-black border border-white/20 active:bg-white/10 disabled:opacity-50">
-                          {syncStatus.loading && syncStatus.msg.includes("FETCH") ? "FETCHING..." : "LOAD FROM CLOUD"}
-                        </button>
-                        <button 
-                          onClick={syncToCloud} 
-                          disabled={syncStatus.loading}
-                          className="py-3 bg-[#01A982]/20 text-[#01A982] text-[10px] font-black border border-[#01A982]/30 active:bg-[#01A982]/30 disabled:opacity-50">
-                          {syncStatus.loading && syncStatus.msg.includes("SYNC") ? "SYNCING..." : "SAVE TO CLOUD"}
-                        </button>
-                      </div>
+                      <input type="text" value={gasUrl} onChange={e => setGasUrl(e.target.value)} placeholder="https://script.google.com/macros/s/.../exec" className="w-full bg-black border border-white/10 p-4 text-[10px] font-mono text-white outline-none focus:border-[#01A982]" />
+                      <div className="grid grid-cols-2 gap-4"><button onClick={loadFromCloud} disabled={syncStatus.loading} className="py-3 bg-white/5 text-white text-[10px] font-black border border-white/20 active:bg-white/10 disabled:opacity-50">{syncStatus.loading && syncStatus.msg.includes("FETCH") ? "FETCHING..." : "LOAD FROM CLOUD"}</button><button onClick={syncToCloud} disabled={syncStatus.loading} className="py-3 bg-[#01A982]/20 text-[#01A982] text-[10px] font-black border border-[#01A982]/30 active:bg-[#01A982]/30 disabled:opacity-50">{syncStatus.loading && syncStatus.msg.includes("SYNC") ? "SYNCING..." : "SAVE TO CLOUD"}</button></div>
                       {syncStatus.msg && <div className="text-[10px] font-black text-center text-sky-400 uppercase tracking-[0.3em] bg-sky-900/20 py-3 rounded-sm border border-sky-500/30 animate-pulse">{syncStatus.msg}</div>}
                     </div>
-
-                    <div className="bg-white/[0.03] border border-white/5 p-6 rounded-sm space-y-4">
-                      <label className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em]">Full Year Target (Q1-Q4 Sum)</label>
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1 bg-black/40 border border-white/5 p-5 text-2xl font-black text-[#01A982] shadow-inner">
-                          {(Number(quotas.Q1||0) + Number(quotas.Q2||0) + Number(quotas.Q3||0) + Number(quotas.Q4||0)).toLocaleString()}
-                        </div>
-                        <span className="text-lg font-black text-gray-600">M</span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        {["Q1", "Q2", "Q3", "Q4"].map(q => (
-                          <div key={q} className="bg-white/[0.03] border border-white/5 p-4 rounded-sm space-y-2">
-                            <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{q} Target</label>
-                            <div className="flex items-center gap-2">
-                              <input type="number" value={quotas[q]} onChange={e => setQuotas({...quotas, [q]: Number(e.target.value)})} className="w-full bg-black border border-white/10 p-3 text-lg font-black text-white outline-none focus:border-[#01A982]" />
-                              <span className="text-xs font-bold text-gray-700">M</span>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                    <div className="pt-6">
-                        <button onClick={() => setShowQuotaForm(false)} className="w-full py-5 bg-[#01A982] text-white font-black text-lg uppercase tracking-widest shadow-xl active:scale-95 transition-transform">Update & Close</button>
-                    </div>
+                    <div className="bg-white/[0.03] border border-white/5 p-6 rounded-sm space-y-4"><label className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em]">Full Year Target (Q1-Q4 Sum)</label><div className="flex items-center gap-4"><div className="flex-1 bg-black/40 border border-white/5 p-5 text-2xl font-black text-[#01A982] shadow-inner">{(Number(quotas.Q1||0) + Number(quotas.Q2||0) + Number(quotas.Q3||0) + Number(quotas.Q4||0)).toLocaleString()}</div><span className="text-lg font-black text-gray-600">M</span></div></div>
+                    <div className="grid grid-cols-2 gap-4">{["Q1", "Q2", "Q3", "Q4"].map(q => (<div key={q} className="bg-white/[0.03] border border-white/5 p-4 rounded-sm space-y-2"><label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{q} Target</label><div className="flex items-center gap-2"><input type="number" value={quotas[q]} onChange={e => setQuotas({...quotas, [q]: Number(e.target.value)})} className="w-full bg-black border border-white/10 p-3 text-lg font-black text-white outline-none focus:border-[#01A982]" /><span className="text-xs font-bold text-gray-700">M</span></div></div>))}</div>
+                    <div className="pt-6"><button onClick={() => setShowQuotaForm(false)} className="w-full py-5 bg-[#01A982] text-white font-black text-lg uppercase tracking-widest shadow-xl active:scale-95 transition-transform">Update & Close</button></div>
                   </div>
                 </div>
               )}
-
-              {/* Modal: Opportunity Config */}
               {showForm && (
                 <div className="fixed inset-0 bg-black z-[2000] flex flex-col no-print animate-in slide-in-from-bottom duration-300">
-                  <header className="px-6 py-6 border-b border-white/10 flex justify-between items-center">
-                    <span className="text-[10px] font-black tracking-[0.5em] text-[#01A982] uppercase">Opportunity Config</span>
-                    <button onClick={() => setShowForm(false)} className="text-gray-500 p-2 active:text-white"><Ico.X /></button>
-                  </header>
-                  <div className="flex-1 overflow-y-auto p-8 space-y-8">
-                    <div className="space-y-2">
-                      <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Client Identity</label>
-                      <input value={form.client} onChange={e => setForm({ ...form, client: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none focus:border-[#01A982] rounded-none shadow-inner" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Amount (¥M)</label>
-                          <input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none focus:border-[#01A982] rounded-none shadow-inner" />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Month</label>
-                          <select value={form.month} onChange={e => setForm({ ...form, month: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none appearance-none rounded-none">
-                            {MONTHS.map(m => <option key={m} value={m} className="bg-black">{m}</option>)}
-                          </select>
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Confidence Level</label>
-                        <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none appearance-none rounded-none">
-                          {STATUS_ORDER.map(s => <option key={s} value={s} className="bg-black">{s}</option>)}
-                        </select>
-                    </div>
-                    <div className="pt-10 flex flex-col gap-4">
-                        <button onClick={saveDeal} className="w-full py-5 bg-[#01A982] text-white font-black text-lg uppercase tracking-widest shadow-xl active:scale-95 transition-transform">DEPLOY POSITION</button>
-                        {editId && (
-                            <button onClick={() => { setDeals(deals.filter(d => d.id !== editId)); setShowForm(false); }} 
-                              className="w-full py-4 text-rose-500 font-bold uppercase text-sm tracking-widest">Remove Opportunity</button>
-                        )}
-                    </div>
-                  </div>
+                  <header className="px-6 py-6 border-b border-white/10 flex justify-between items-center"><span className="text-[10px] font-black tracking-[0.5em] text-[#01A982] uppercase">Opportunity Config</span><button onClick={() => setShowForm(false)} className="text-gray-500 p-2 active:text-white"><Ico.X /></button></header>
+                  <div className="flex-1 overflow-y-auto p-8 space-y-8"><div className="space-y-2"><label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Client Identity</label><input value={form.client} onChange={e => setForm({ ...form, client: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none focus:border-[#01A982] rounded-none shadow-inner" /></div><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Amount (¥M)</label><input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none focus:border-[#01A982] rounded-none shadow-inner" /></div><div className="space-y-2"><label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Month</label><select value={form.month} onChange={e => setForm({ ...form, month: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none appearance-none rounded-none">{MONTHS.map(m => <option key={m} value={m} className="bg-black">{m}</option>)}</select></div></div><div className="space-y-2"><label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Confidence Level</label><select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none appearance-none rounded-none">{STATUS_ORDER.map(s => <option key={s} value={s} className="bg-black">{s}</option>)}</select></div><div className="pt-10 flex flex-col gap-4"><button onClick={saveDeal} className="w-full py-5 bg-[#01A982] text-white font-black text-lg uppercase tracking-widest shadow-xl active:scale-95 transition-transform">DEPLOY POSITION</button>{editId && (<button onClick={() => { setDeals(deals.filter(d => d.id !== editId)); setShowForm(false); }} className="w-full py-4 text-rose-500 font-bold uppercase text-sm tracking-widest">Remove Opportunity</button>)}</div></div>
                 </div>
               )}
             </div>
           );
         };
-
         const container = document.getElementById('root');
         const root = ReactDOM.createRoot(container);
         root.render(<App />);
