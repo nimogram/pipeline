@@ -109,7 +109,8 @@
           const [showQuotaForm, setShowQuotaForm] = useState(false);
           const [editId, setEditId] = useState(null);
           const [form, setForm] = useState({ client: "", amount: "", status: "PIPELINE", month: "3月" });
-          const [gasUrl, setGasUrl] = useState("");
+          // URLを初期値として設定
+          const [gasUrl, setGasUrl] = useState("https://script.google.com/macros/s/AKfycbxcBDyTr4DlqgjorekoPeZc3utw91MsUH8n-eZNWyHSfOTYLJZmvZPeFMyegLolDjp-IQ/exec");
           const [syncStatus, setSyncStatus] = useState({ loading: false, msg: "" });
           const fileRef = useRef(null);
 
@@ -121,6 +122,7 @@
                 const d = JSON.parse(raw);
                 if (d.deals) setDeals(d.deals);
                 if (d.quotas) setQuotas(d.quotas);
+                // 保存されているURLがあればそれを優先するが、なければ初期値を維持
                 if (d.gasUrl) setGasUrl(d.gasUrl);
               }
             } catch (err) {}
