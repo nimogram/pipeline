@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PIPELINE v11.14 - Mobile Square Debug</title>
+    <title>PIPELINE v11.14 - Mobile Square Tactical</title>
     <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -322,18 +322,22 @@
                       })}
                     </div>
                     {hoverId && (
-                      <div className="absolute top-1/2 left-0 w-full p-6 -translate-y-1/2 pointer-events-none">
-                        <div className="bg-black/95 backdrop-blur-xl border-2 border-[#FDE047] p-6 shadow-[0_0_50px_rgba(253,224,71,0.4)] rounded-sm text-center">
+                      <div className="absolute top-1/2 left-0 w-full p-6 -translate-y-1/2 pointer-events-none z-[1000]">
+                        <div className="bg-black/80 backdrop-blur-2xl border-2 border-[#FDE047] p-6 shadow-[0_0_50px_rgba(253,224,71,0.4)] rounded-sm text-center relative pointer-events-auto">
+                          {/* Close Button Added */}
+                          <button onClick={(e) => { e.stopPropagation(); setHoverId(null); }} className="absolute top-2 right-2 p-2 text-gray-500 hover:text-white active:scale-90 transition-all">
+                             <Ico.X />
+                          </button>
                           {(() => {
                             const d = deals.find(x => x.id === hoverId);
                             if (!d) return null;
                             return (
                               <>
                                 <div className="text-[10px] font-black text-[#FDE047] uppercase tracking-[0.4em] mb-1">Target Lock</div>
-                                <div className="text-xl font-black text-white uppercase mb-2 truncate">{d.client}</div>
+                                <div className="text-xl font-black text-white uppercase mb-2 truncate px-4">{d.client}</div>
                                 <div className="text-3xl font-black text-[#FDE047] mb-1">{fmt(d.amount)}</div>
                                 <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{STATUS_META[d.status].label} · {d.month}</div>
-                                <div className="mt-4 pointer-events-auto">
+                                <div className="mt-4">
                                     <button onClick={() => { setForm({ client: d.client, amount: String(Number(d.amount||0)/UNIT_VALUE), status: d.status, month: d.month }); setEditId(d.id); setShowForm(true); }} className="px-6 py-2 bg-white/10 text-white text-[10px] font-bold uppercase tracking-widest border border-white/20 rounded-full active:bg-white/20">Edit Details</button>
                                 </div>
                               </>
@@ -375,26 +379,94 @@
                 <div className="flex justify-between items-end border-b-2 border-black mb-4 pb-2"><h1 className="text-xl font-black uppercase tracking-[0.5em]">HPE Pipeline Inventory</h1><span className="text-[10px] font-bold text-gray-500 uppercase">Scope: {quarter} · Generated: {new Date().toLocaleDateString()}</span></div>
                 <div className="flex gap-10"><div className="print-layout-grid flex-1"><div className="matrix-container-print" style={{ display: "grid", gridTemplateColumns: `repeat(${gridCfg.cols}, 1fr)`, gridTemplateRows: `repeat(${gridCfg.rows}, 1fr)`, gap: "1px", background: "white" }}>{gridData.map((cell, i) => (<div key={i} style={{ backgroundColor: cell ? STATUS_META[cell.status].bg : (i < stats.qUnits ? "#f3f4f6" : "white"), border: "0.1px solid #eee", aspectRatio: "1/1" }}></div>))}</div></div><div className="flex-1"><table className="w-full border-collapse print-table"><thead><tr className="bg-gray-100"><th align="left">Stage</th><th align="left">Identity</th><th align="right">Amount</th><th align="center">QTA</th><th align="center">Month</th></tr></thead><tbody>{sortedDeals.map(d => (<tr key={d.id} className={d.status === 'WON' || d.status === 'COMMIT' ? "bg-highlight-green" : (d.status === 'STRONG UPSIDE' ? "bg-highlight-blue" : "")}><td style={{ color: STATUS_META[d.status].bg, fontWeight: "bold" }}>{STATUS_META[d.status].label}</td><td>{d.client}</td><td align="right">{fmt(d.amount)}</td><td align="center">{getQta(d.month)}</td><td align="center">{d.month}</td></tr>))}</tbody></table></div></div>
               </div>
+
+              {/* Modal: Settings & Quota Screen (Semi-Transparent & Compact) */}
               {showQuotaForm && (
-                <div className="fixed inset-0 bg-black z-[2000] flex flex-col no-print animate-in fade-in duration-200">
-                  <header className="px-6 py-6 border-b border-white/10 flex justify-between items-center"><span className="text-[10px] font-black tracking-[0.5em] text-[#01A982] uppercase flex items-center gap-2"><Ico.Target /> Settings & Quota</span><button onClick={() => setShowQuotaForm(false)} className="text-gray-500 p-2 active:text-white"><Ico.X /></button></header>
-                  <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
-                    <div className="bg-white/[0.03] border border-white/5 p-6 rounded-sm space-y-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[2000] flex flex-col no-print animate-in fade-in duration-300">
+                  <header className="px-6 py-6 border-b border-white/10 flex justify-between items-center bg-black/40">
+                    <span className="text-[10px] font-black tracking-[0.5em] text-[#01A982] uppercase flex items-center gap-2"><Ico.Target /> Settings & Quota</span>
+                    <button onClick={() => setShowQuotaForm(false)} className="text-gray-500 p-2 active:text-white active:scale-90"><Ico.X /></button>
+                  </header>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+                    {/* Cloud Sync Section */}
+                    <div className="bg-white/[0.05] border border-white/5 p-4 rounded-sm space-y-3 shadow-2xl backdrop-blur-md">
                       <label className="text-[8px] font-black text-[#01A982] uppercase tracking-[0.2em] flex items-center gap-2"><Ico.Cloud /> Cloud Sync (GAS)</label>
-                      <input type="text" value={gasUrl} onChange={e => setGasUrl(e.target.value)} placeholder="https://script.google.com/macros/s/.../exec" className="w-full bg-black border border-white/10 p-4 text-[10px] font-mono text-white outline-none focus:border-[#01A982]" />
-                      <div className="grid grid-cols-2 gap-4"><button onClick={loadFromCloud} disabled={syncStatus.loading} className="py-3 bg-white/5 text-white text-[10px] font-black border border-white/20 active:bg-white/10 disabled:opacity-50">{syncStatus.loading && syncStatus.msg.includes("FETCH") ? "FETCHING..." : "LOAD FROM CLOUD"}</button><button onClick={syncToCloud} disabled={syncStatus.loading} className="py-3 bg-[#01A982]/20 text-[#01A982] text-[10px] font-black border border-[#01A982]/30 active:bg-[#01A982]/30 disabled:opacity-50">{syncStatus.loading && syncStatus.msg.includes("SYNC") ? "SYNCING..." : "SAVE TO CLOUD"}</button></div>
-                      {syncStatus.msg && <div className="text-[10px] font-black text-center text-sky-400 uppercase tracking-[0.3em] bg-sky-900/20 py-3 rounded-sm border border-sky-500/30 animate-pulse">{syncStatus.msg}</div>}
+                      <input type="text" value={gasUrl} onChange={e => setGasUrl(e.target.value)} placeholder="https://script.google.com/macros/s/.../exec" className="w-full bg-black border border-white/10 p-3 text-[10px] font-mono text-white outline-none focus:border-[#01A982]" />
+                      <div className="grid grid-cols-2 gap-3">
+                        <button onClick={loadFromCloud} disabled={syncStatus.loading} className="py-3 bg-white/5 text-white text-[10px] font-black border border-white/20 active:bg-white/10 transition-all disabled:opacity-50 uppercase tracking-tighter">Load From Cloud</button>
+                        <button onClick={syncToCloud} disabled={syncStatus.loading} className="py-3 bg-[#01A982]/20 text-[#01A982] text-[10px] font-black border border-[#01A982]/30 active:bg-[#01A982]/30 transition-all disabled:opacity-50 uppercase tracking-tighter">Save To Cloud</button>
+                      </div>
+                      {syncStatus.msg && <div className="text-[10px] font-black text-center text-sky-400 uppercase tracking-[0.3em] bg-sky-900/20 py-2 rounded-sm border border-sky-500/30 animate-pulse">{syncStatus.msg}</div>}
                     </div>
-                    <div className="bg-white/[0.03] border border-white/5 p-6 rounded-sm space-y-4"><label className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em]">Full Year Target (Q1-Q4 Sum)</label><div className="flex items-center gap-4"><div className="flex-1 bg-black/40 border border-white/5 p-5 text-2xl font-black text-[#01A982] shadow-inner">{(Number(quotas.Q1||0) + Number(quotas.Q2||0) + Number(quotas.Q3||0) + Number(quotas.Q4||0)).toLocaleString()}</div><span className="text-lg font-black text-gray-600">M</span></div></div>
-                    <div className="grid grid-cols-2 gap-4">{["Q1", "Q2", "Q3", "Q4"].map(q => (<div key={q} className="bg-white/[0.03] border border-white/5 p-4 rounded-sm space-y-2"><label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{q} Target</label><div className="flex items-center gap-2"><input type="number" value={quotas[q]} onChange={e => setQuotas({...quotas, [q]: Number(e.target.value)})} className="w-full bg-black border border-white/10 p-3 text-lg font-black text-white outline-none focus:border-[#01A982]" /><span className="text-xs font-bold text-gray-700">M</span></div></div>))}</div>
-                    <div className="pt-6"><button onClick={() => setShowQuotaForm(false)} className="w-full py-5 bg-[#01A982] text-white font-black text-lg uppercase tracking-widest shadow-xl active:scale-95 transition-transform">Update & Close</button></div>
+
+                    {/* Quota Summary Section */}
+                    <div className="bg-white/[0.05] border border-white/5 p-4 rounded-sm space-y-3 shadow-2xl backdrop-blur-md">
+                        <label className="text-[8px] font-black text-gray-500 uppercase tracking-[0.2em]">Full Year Target (Q1-Q4 Sum)</label>
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1 bg-black/40 border border-white/5 p-4 text-2xl font-black text-[#01A982] shadow-inner">{(Number(quotas.Q1||0) + Number(quotas.Q2||0) + Number(quotas.Q3||0) + Number(quotas.Q4||0)).toLocaleString()}</div>
+                            <span className="text-lg font-black text-gray-600">M</span>
+                        </div>
+                    </div>
+
+                    {/* Quarter Inputs (2x2 Grid) */}
+                    <div className="grid grid-cols-2 gap-3">
+                        {["Q1", "Q2", "Q3", "Q4"].map(q => (
+                          <div key={q} className="bg-white/[0.05] border border-white/5 p-3 rounded-sm space-y-1 shadow-2xl backdrop-blur-md">
+                            <label className="text-[8px] font-black text-gray-500 uppercase tracking-widest">{q} Target</label>
+                            <div className="flex items-center gap-2">
+                              <input type="number" value={quotas[q]} onChange={e => setQuotas({...quotas, [q]: Number(e.target.value)})} className="w-full bg-black border border-white/10 p-2 text-lg font-black text-white outline-none focus:border-[#01A982]" />
+                              <span className="text-xs font-bold text-gray-700">M</span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="pt-2">
+                        <button onClick={() => setShowQuotaForm(false)} className="w-full py-4 bg-[#01A982] text-white font-black text-lg uppercase tracking-[0.3em] shadow-xl active:scale-95 transition-transform mb-4">DEPLOY TARGETS</button>
+                    </div>
                   </div>
                 </div>
               )}
+
+              {/* Modal: Opportunity Config (Fullscreen Mobile) */}
               {showForm && (
                 <div className="fixed inset-0 bg-black z-[2000] flex flex-col no-print animate-in slide-in-from-bottom duration-300">
-                  <header className="px-6 py-6 border-b border-white/10 flex justify-between items-center"><span className="text-[10px] font-black tracking-[0.5em] text-[#01A982] uppercase">Opportunity Config</span><button onClick={() => setShowForm(false)} className="text-gray-500 p-2 active:text-white"><Ico.X /></button></header>
-                  <div className="flex-1 overflow-y-auto p-8 space-y-8"><div className="space-y-2"><label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Client Identity</label><input value={form.client} onChange={e => setForm({ ...form, client: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none focus:border-[#01A982] rounded-none shadow-inner" /></div><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Amount (¥M)</label><input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none focus:border-[#01A982] rounded-none shadow-inner" /></div><div className="space-y-2"><label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Month</label><select value={form.month} onChange={e => setForm({ ...form, month: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none appearance-none rounded-none">{MONTHS.map(m => <option key={m} value={m} className="bg-black">{m}</option>)}</select></div></div><div className="space-y-2"><label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Confidence Level</label><select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none appearance-none rounded-none">{STATUS_ORDER.map(s => <option key={s} value={s} className="bg-black">{s}</option>)}</select></div><div className="pt-10 flex flex-col gap-4"><button onClick={saveDeal} className="w-full py-5 bg-[#01A982] text-white font-black text-lg uppercase tracking-widest shadow-xl active:scale-95 transition-transform">DEPLOY POSITION</button>{editId && (<button onClick={() => { setDeals(deals.filter(d => d.id !== editId)); setShowForm(false); }} className="w-full py-4 text-rose-500 font-bold uppercase text-sm tracking-widest">Remove Opportunity</button>)}</div></div>
+                  <header className="px-6 py-6 border-b border-white/10 flex justify-between items-center">
+                    <span className="text-[10px] font-black tracking-[0.5em] text-[#01A982] uppercase">Opportunity Config</span>
+                    <button onClick={() => setShowForm(false)} className="text-gray-500 p-2 active:text-white"><Ico.X /></button>
+                  </header>
+                  <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                    <div className="space-y-2">
+                      <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Client Identity</label>
+                      <input value={form.client} onChange={e => setForm({ ...form, client: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none focus:border-[#01A982] rounded-none shadow-inner" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Amount (¥M)</label>
+                          <input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none focus:border-[#01A982] rounded-none shadow-inner" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Month</label>
+                          <select value={form.month} onChange={e => setForm({ ...form, month: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none appearance-none rounded-none">
+                            {MONTHS.map(m => <option key={m} value={m} className="bg-black">{m}</option>)}
+                          </select>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Confidence Level</label>
+                        <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="w-full bg-[#0d1117] border border-white/10 p-5 text-lg font-black text-white outline-none appearance-none rounded-none">
+                          {STATUS_ORDER.map(s => <option key={s} value={s} className="bg-black">{s}</option>)}
+                        </select>
+                    </div>
+                    <div className="pt-10 flex flex-col gap-4">
+                        <button onClick={saveDeal} className="w-full py-5 bg-[#01A982] text-white font-black text-lg uppercase tracking-widest shadow-xl active:scale-95 transition-transform">DEPLOY POSITION</button>
+                        {editId && (
+                            <button onClick={() => { setDeals(deals.filter(d => d.id !== editId)); setShowForm(false); }} 
+                              className="w-full py-4 text-rose-500 font-bold uppercase text-sm tracking-widest">Remove Opportunity</button>
+                        )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
