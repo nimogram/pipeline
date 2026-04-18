@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PIPELINE v11.14 - Mobile Square</title>
+    <title>PIPELINE v11.14 - Mobile Square Debug</title>
     <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -43,11 +43,9 @@
         }
 
         .print-only { display: none; }
-        
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* ホバー時の静的強調 */
         .balloon-active {
             box-shadow: 0 0 25px rgba(253, 224, 71, 0.7);
             border-color: #FDE047 !important;
@@ -55,7 +53,6 @@
             z-index: 100 !important;
         }
 
-        /* 正方形グリッドのコンテナ */
         .matrix-square-container {
             width: 100vw;
             height: 100vw;
@@ -109,8 +106,7 @@
           const [showQuotaForm, setShowQuotaForm] = useState(false);
           const [editId, setEditId] = useState(null);
           const [form, setForm] = useState({ client: "", amount: "", status: "PIPELINE", month: "3月" });
-          // URLを初期値として設定
-          const [gasUrl, setGasUrl] = useState("https://script.google.com/macros/s/AKfycbxcBDyTr4DlqgjorekoPeZc3utw91MsUH8n-eZNWyHSfOTYLJZmvZPeFMyegLolDjp-IQ/exec");
+          const [gasUrl, setGasUrl] = useState("https://script.google.com/macros/s/AKfycbwDHgk6TBz8UgNQ3W4HvGMLDMgVuuHrk6OokJ-bR73ek8cZNpNGpHPCSyQeSm-h8gMePw/exec");
           const [syncStatus, setSyncStatus] = useState({ loading: false, msg: "" });
           const fileRef = useRef(null);
 
@@ -122,7 +118,6 @@
                 const d = JSON.parse(raw);
                 if (d.deals) setDeals(d.deals);
                 if (d.quotas) setQuotas(d.quotas);
-                // 保存されているURLがあればそれを優先するが、なければ初期値を維持
                 if (d.gasUrl) setGasUrl(d.gasUrl);
               }
             } catch (err) {}
@@ -132,7 +127,6 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify({ deals, quotas, gasUrl }));
           }, [deals, quotas, gasUrl]);
 
-          // 計算されたALL Quota
           const currentQuotaValue = useMemo(() => {
             if (quarter === "ALL") {
               return (Number(quotas.Q1 || 0) + Number(quotas.Q2 || 0) + Number(quotas.Q3 || 0) + Number(quotas.Q4 || 0));
@@ -208,36 +202,56 @@
             r.readAsText(e.target.files[0]);
           };
 
+          // --- Improved Cloud Sync Logic with Detailed Logs ---
           const syncToCloud = async () => {
-            if (!gasUrl) return setSyncStatus({ loading: false, msg: "URLを入力してください" });
-            setSyncStatus({ loading: true, msg: "Saving..." });
+            if (!gasUrl) return setSyncStatus({ loading: false, msg: "URL REQUIRED" });
+            setSyncStatus({ loading: true, msg: "REQUESTING..." });
+            
             try {
-              const response = await fetch(gasUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ deals, quotas })
+              // POST with explicit payload structure
+              const payload = JSON.stringify({ 
+                deals, 
+                quotas, 
+                timestamp: new Date().toISOString(),
+                clientSource: "MobileSquare-v11.14"
               });
-              setSyncStatus({ loading: false, msg: "Success (Request Sent)" });
+
+              await fetch(gasUrl, {
+                method: 'POST',
+                mode: 'no-cors', 
+                headers: { 'Content-Type': 'text/plain' }, 
+                body: payload
+              });
+              
+              setSyncStatus({ loading: false, msg: "SENT (CHECK SHEET)" });
             } catch (err) {
-              setSyncStatus({ loading: false, msg: "Error: " + err.message });
+              setSyncStatus({ loading: false, msg: "SEND FAILED: " + err.message.substring(0,20) });
             }
-            setTimeout(() => setSyncStatus({ loading: false, msg: "" }), 3000);
+            setTimeout(() => setSyncStatus({ loading: false, msg: "" }), 5000);
           };
 
           const loadFromCloud = async () => {
-            if (!gasUrl) return setSyncStatus({ loading: false, msg: "URLを入力してください" });
-            setSyncStatus({ loading: true, msg: "Loading..." });
+            if (!gasUrl) return setSyncStatus({ loading: false, msg: "URL REQUIRED" });
+            setSyncStatus({ loading: true, msg: "FETCHING..." });
+            
             try {
-              const response = await fetch(gasUrl);
+              const response = await fetch(gasUrl, { method: 'GET', cache: 'no-store' });
+              
+              if (!response.ok) throw new Error("HTTP " + response.status);
+              
               const data = await response.json();
-              if (data.deals) setDeals(data.deals);
-              if (data.quotas) setQuotas(data.quotas);
-              setSyncStatus({ loading: false, msg: "Loaded!" });
+              if (data && data.deals) {
+                setDeals(data.deals);
+                if (data.quotas) setQuotas(data.quotas);
+                setSyncStatus({ loading: false, msg: "LOAD SUCCESS (" + data.deals.length + ")" });
+              } else {
+                setSyncStatus({ loading: false, msg: "DATA EMPTY ON SHEET" });
+              }
             } catch (err) {
-              setSyncStatus({ loading: false, msg: "Error: " + err.message });
+              console.error(err);
+              setSyncStatus({ loading: false, msg: "LOAD ERROR (CORS?)" });
             }
-            setTimeout(() => setSyncStatus({ loading: false, msg: "" }), 3000);
+            setTimeout(() => setSyncStatus({ loading: false, msg: "" }), 5000);
           };
 
           const getQta = (month) => {
@@ -250,7 +264,7 @@
           return (
             <div className="flex flex-col h-full overflow-hidden bg-black">
               
-              {/* Header: Tactical Mobile Command */}
+              {/* Header */}
               <header className="bg-black border-b border-[#01A98240] pt-4 pb-2 px-4 flex-shrink-0 z-50 no-print">
                 <div className="flex justify-between items-center mb-3">
                   <div className="flex items-center gap-2">
@@ -264,7 +278,6 @@
                   </div>
                 </div>
 
-                {/* Quarter Select (Horizontal Scroll) */}
                 <div className="flex bg-[#0d1117] p-1 border border-white/10 rounded-sm mb-3 overflow-x-auto scrollbar-hide">
                   {["ALL", "Q1", "Q2", "Q3", "Q4"].map(q => (
                     <button key={q} onClick={() => setQuarter(q)} 
@@ -274,14 +287,12 @@
                   ))}
                 </div>
 
-                {/* Key Metrics */}
                 <div className="flex justify-between items-center px-1 mb-3">
                   <div className="flex flex-col">
                     <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest">Pipeline</span>
                     <span className="text-lg font-black text-[#01A982]">{fmt(stats.total)}</span>
                   </div>
                   
-                  {/* Clickable Quota KPI (Trigger Modal) */}
                   <button onClick={() => setShowQuotaForm(true)} className="flex flex-col items-center group active:scale-95 transition-transform">
                     <span className="text-[8px] text-gray-600 font-bold uppercase tracking-widest flex items-center gap-1">Quota <Ico.Target /></span>
                     <span className="text-lg font-black text-white group-hover:text-[#01A982] border-b border-transparent group-hover:border-[#01A982]">{fmt(currentQuotaValue*UNIT_VALUE)}</span>
@@ -293,7 +304,6 @@
                   </div>
                 </div>
 
-                {/* QTA Cumulative Visual Bar */}
                 <div className="h-6 bg-black border border-white/5 flex overflow-hidden rounded-sm relative shadow-inner mb-1">
                   {stats.byStatus.map(s => s.val > 0 && (
                     <div key={s.status} 
@@ -309,7 +319,7 @@
                 </div>
               </header>
 
-              {/* Dynamic Content: Matrix or List */}
+              {/* Dynamic Content */}
               <main className="flex-1 min-h-0 relative flex flex-col no-print">
                 {activeTab === 'matrix' ? (
                   <div className="flex-1 flex flex-col items-center justify-start overflow-hidden pt-4">
@@ -383,7 +393,7 @@
                 )}
               </main>
 
-              {/* Fixed Bottom Navigation */}
+              {/* Bottom Navigation */}
               <nav className="no-print bg-black border-t border-white/10 flex items-center justify-around h-20 px-6 pb-2 z-50">
                 <button onClick={() => { setActiveTab('matrix'); setHoverId(null); }} className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'matrix' ? 'text-[#01A982] scale-110' : 'text-gray-600'}`}>
                   <Ico.Grid />
@@ -395,7 +405,7 @@
                   <Ico.Plus />
                 </button>
 
-                <button onClick={() => setActiveTab('list')} className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'list' ? 'text-[#01A982] scale-110' : 'text-gray-500'}`}>
+                <button onClick={() => setActiveTab('list')} className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'list' ? 'text-[#01A982] scale-110' : 'text-gray-600'}`}>
                   <Ico.List />
                   <span className="text-[9px] font-black uppercase tracking-widest">List</span>
                 </button>
@@ -463,23 +473,23 @@
                         value={gasUrl} 
                         onChange={e => setGasUrl(e.target.value)} 
                         placeholder="https://script.google.com/macros/s/.../exec"
-                        className="w-full bg-black border border-white/10 p-4 text-xs font-mono text-white outline-none focus:border-[#01A982]" 
+                        className="w-full bg-black border border-white/10 p-4 text-[10px] font-mono text-white outline-none focus:border-[#01A982]" 
                       />
                       <div className="grid grid-cols-2 gap-4">
                         <button 
                           onClick={loadFromCloud} 
                           disabled={syncStatus.loading}
                           className="py-3 bg-white/5 text-white text-[10px] font-black border border-white/20 active:bg-white/10 disabled:opacity-50">
-                          {syncStatus.loading && syncStatus.msg.includes("Load") ? "Loading..." : "LOAD FROM CLOUD"}
+                          {syncStatus.loading && syncStatus.msg.includes("FETCH") ? "FETCHING..." : "LOAD FROM CLOUD"}
                         </button>
                         <button 
                           onClick={syncToCloud} 
                           disabled={syncStatus.loading}
                           className="py-3 bg-[#01A982]/20 text-[#01A982] text-[10px] font-black border border-[#01A982]/30 active:bg-[#01A982]/30 disabled:opacity-50">
-                          {syncStatus.loading && syncStatus.msg.includes("Save") ? "Saving..." : "SAVE TO CLOUD"}
+                          {syncStatus.loading && syncStatus.msg.includes("SYNC") ? "SYNCING..." : "SAVE TO CLOUD"}
                         </button>
                       </div>
-                      {syncStatus.msg && <div className="text-[8px] font-bold text-center text-sky-400 uppercase tracking-widest">{syncStatus.msg}</div>}
+                      {syncStatus.msg && <div className="text-[10px] font-black text-center text-sky-400 uppercase tracking-[0.3em] bg-sky-900/20 py-3 rounded-sm border border-sky-500/30 animate-pulse">{syncStatus.msg}</div>}
                     </div>
 
                     <div className="bg-white/[0.03] border border-white/5 p-6 rounded-sm space-y-4">
@@ -509,7 +519,7 @@
                 </div>
               )}
 
-              {/* Modal: Opportunity Config (Fullscreen Mobile) */}
+              {/* Modal: Opportunity Config */}
               {showForm && (
                 <div className="fixed inset-0 bg-black z-[2000] flex flex-col no-print animate-in slide-in-from-bottom duration-300">
                   <header className="px-6 py-6 border-b border-white/10 flex justify-between items-center">
