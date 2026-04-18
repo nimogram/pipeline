@@ -106,7 +106,8 @@
           const [showQuotaForm, setShowQuotaForm] = useState(false);
           const [editId, setEditId] = useState(null);
           const [form, setForm] = useState({ client: "", amount: "", status: "PIPELINE", month: "3月" });
-          const [gasUrl, setGasUrl] = useState("https://script.google.com/macros/s/AKfycbwDHgk6TBz8UgNQ3W4HvGMLDMgVuuHrk6OokJ-bR73ek8cZNpNGpHPCSyQeSm-h8gMePw/exec");
+          // URLを最新の指示に合わせて更新しました
+          const [gasUrl, setGasUrl] = useState("https://script.google.com/macros/s/AKfycbyiCV4WaqccGv7geNZ7qWpj9Bx3Mhli0nsONVRL2yGjIroR3GfFDHiXZRbNBP5pT_MqqA/exec");
           const [syncStatus, setSyncStatus] = useState({ loading: false, msg: "" });
           const fileRef = useRef(null);
 
@@ -202,13 +203,11 @@
             r.readAsText(e.target.files[0]);
           };
 
-          // --- Improved Cloud Sync Logic with Detailed Logs ---
           const syncToCloud = async () => {
             if (!gasUrl) return setSyncStatus({ loading: false, msg: "URL REQUIRED" });
             setSyncStatus({ loading: true, msg: "REQUESTING..." });
             
             try {
-              // POST with explicit payload structure
               const payload = JSON.stringify({ 
                 deals, 
                 quotas, 
